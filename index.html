@@ -901,7 +901,7 @@ tr:hover td{background:var(--card2)}tr:last-child td{border-bottom:none}.tbl-act
 //  empty string below with your deployment URL.
 //  Example: 'https://script.google.com/macros/s/AKfy.../exec'
 // ═══════════════════════════════════════════════════════════
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbxXWk8Y-srKvgc9TJkRiLFNXiaONS316YOaD_Ge0SqpPcwTQC4EcOvjz7kHjB1ulfu7Zg/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbwI7QpxzPvbZQ3x7JGLDqDWm06hp8tErLWbma5xiMc9koFtbDfbkjOR8RpbaCI6U9Tp-Q/exec';
 // ═══════════════════════════════════════════════════════════
 
 var DB = {parties:[],users:[],cashReceipts:[],partyPayments:[],miscIncome:[],blacklist:[],notes:[],messages:[],settings:[],purchases:[]};
@@ -1015,32 +1015,61 @@ function fillAdminCreds(){
   document.getElementById('li-user').select();
 }
 
+function setLoginCredentials(){
+  var u=document.getElementById('li-user');
+  var p=document.getElementById('li-pass');
+  if(u&&!u.value)u.value='admin';
+  if(p&&!p.value)p.value='admin123';
+}
 function showLoginScreen(){
   document.getElementById('loadOverlay').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
-  // Always set credentials visibly
-  document.getElementById('li-user').value='admin';
-  document.getElementById('li-pass').value='admin123';
+  setLoginCredentials();
 }
 
 function bootApp(){
+  // Safety timeout - always show login within 6 seconds no matter what
+  var safetyTimer=setTimeout(function(){
+    var lo=document.getElementById('loadOverlay');
+    var ls=document.getElementById('loginScreen');
+    if(lo&&lo.style.display!=='none'){
+      lo.style.display='none';
+      if(ls)ls.style.display='flex';
+      var d=document.getElementById('loginDot');if(d)d.className='sync-dot red';
+      var s=document.getElementById('loginStatus');if(s)s.textContent='⚠️ Connection timeout — login to continue';
+      setLoginCredentials();
+    }
+  },6000);
+
   document.getElementById('loadOverlay').style.display='flex';
   document.getElementById('loadMsg').textContent='Connecting to Google Sheets...';
-  if(!GAS_URL||GAS_URL.length<10){
+
+  if(!GAS_URL||GAS_URL.trim().length<10){
+    clearTimeout(safetyTimer);
     showLoginScreen();
-    document.getElementById('loginDot').className='sync-dot red';
-    document.getElementById('loginStatus').textContent='⚠️ GAS_URL not configured — set your URL in the HTML file';
+    var d=document.getElementById('loginDot');if(d)d.className='sync-dot red';
+    var s=document.getElementById('loginStatus');if(s)s.textContent='⚠️ GAS_URL not set — paste your URL in the HTML file';
     return;
   }
-  syncAll().then(function(){
+
+  try{
+    syncAll().then(function(){
+      clearTimeout(safetyTimer);
+      showLoginScreen();
+      var d=document.getElementById('loginDot');if(d)d.className='sync-dot';
+      var s=document.getElementById('loginStatus');if(s)s.textContent='✓ Connected to Google Sheets';
+    }).catch(function(e){
+      clearTimeout(safetyTimer);
+      showLoginScreen();
+      var d=document.getElementById('loginDot');if(d)d.className='sync-dot red';
+      var s=document.getElementById('loginStatus');if(s)s.textContent='⚠️ Connection failed — login to continue offline';
+    });
+  }catch(e){
+    clearTimeout(safetyTimer);
     showLoginScreen();
-    document.getElementById('loginDot').className='sync-dot';
-    document.getElementById('loginStatus').textContent='✓ Connected to Google Sheets';
-  }).catch(function(){
-    showLoginScreen();
-    document.getElementById('loginDot').className='sync-dot red';
-    document.getElementById('loginStatus').textContent='⚠️ Connection failed — using offline mode';
-  });
+    var d=document.getElementById('loginDot');if(d)d.className='sync-dot red';
+    var s=document.getElementById('loginStatus');if(s)s.textContent='⚠️ Error: '+e.message;
+  }
 }
 
 function doLogin(){
@@ -1738,7 +1767,7 @@ function doPrint(){
   S.printedCount++;localStorage.setItem('eap_prints',S.printedCount);
   var content=document.getElementById('voucherContent').innerHTML;
   var w=window.open('','_blank','width=640,height=800');
-  w.document.write('<!DOCTYPE html><html><head><title>Voucher</title><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:16px;font-family:Arial,sans-serif}.voucher-wrap{max-width:500px;margin:0 auto;padding:16px}.vph{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:10px}.vph h2{font-size:17px;font-weight:800}.vph p{font-size:11px;color:#64748b;margin-top:2px}.vph h3{font-size:13px;font-weight:700;margin-top:5px;text-decoration:underline}.vpr{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px dotted #cbd5e1}.vpt{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;font-weight:800;border-top:2px solid #000;margin-top:8px}.vpw{font-size:11px;color:#475569;margin-top:4px;font-style:italic}.vpsig{display:flex;justify-content:space-between;margin-top:24px;font-size:11px}.vpsig-box{text-align:center;width:110px}.vpsig-line{border-top:1px solid #000;padding-top:3px}.vp-copy{text-align:center;font-size:10px;font-weight:700;letter-spacing:1px;color:#64748b;margin-bottom:5px;text-transform:uppercase}.vp-sep{border:none;border-top:2px dashed #94a3b8;margin:16px 0}@page{margin:10mm}</style></head><body>'+content+'<script>window.onload=function(){window.print();setTimeout(function(){window.close()},800)}<\/script></body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Voucher</title><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:16px;font-family:Arial,sans-serif}.voucher-wrap{max-width:500px;margin:0 auto;padding:16px}.vph{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:10px}.vph h2{font-size:17px;font-weight:800}.vph p{font-size:11px;color:#64748b;margin-top:2px}.vph h3{font-size:13px;font-weight:700;margin-top:5px;text-decoration:underline}.vpr{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px dotted #cbd5e1}.vpt{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;font-weight:800;border-top:2px solid #000;margin-top:8px}.vpw{font-size:11px;color:#475569;margin-top:4px;font-style:italic}.vpsig{display:flex;justify-content:space-between;margin-top:24px;font-size:11px}.vpsig-box{text-align:center;width:110px}.vpsig-line{border-top:1px solid #000;padding-top:3px}.vp-copy{text-align:center;font-size:10px;font-weight:700;letter-spacing:1px;color:#64748b;margin-bottom:5px;text-transform:uppercase}.vp-sep{border:none;border-top:2px dashed #94a3b8;margin:16px 0}@page{margin:10mm}</style></head><body>'+content+'<scr'+'ipt>window.onload=function(){window.print();setTimeout(function(){window.close()},800)}<\/script></body></html>');
   w.document.close();
 }
 function amtToWords(n){var a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];var b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];if(!n||n===0)return'Zero';function tw(n){if(n<20)return a[n];return b[Math.floor(n/10)]+(n%10?' '+a[n%10]:'')}function hund(n){if(n>99)return a[Math.floor(n/100)]+' Hundred'+(n%100?' '+tw(n%100):'');return tw(n)}var w='';n=Math.floor(n);if(n>=10000000){w+=hund(Math.floor(n/10000000))+' Crore ';n%=10000000}if(n>=100000){w+=hund(Math.floor(n/100000))+' Lakh ';n%=100000}if(n>=1000){w+=hund(Math.floor(n/1000))+' Thousand ';n%=1000}w+=hund(n);return w.trim()+' Only'}
@@ -1951,7 +1980,7 @@ function printPartyLedger(){
     +'<div class="sig-box"><div class="sig-line">Authorised By</div></div>'
     +'</div>'
     +(co.footer?'<div style="text-align:center;margin-top:16px;font-size:10px;color:#94a3b8">'+co.footer+'</div>':'')
-    +'<script>window.onload=function(){window.print();setTimeout(function(){window.close()},1000)}<\/script>'
+    +'<scr'+'ipt>window.onload=function(){window.print();setTimeout(function(){window.close()},1000)}<\/script>'
     +'</body></html>');
   w.document.close();
 }
