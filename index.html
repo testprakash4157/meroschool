@@ -992,7 +992,7 @@ function refreshCurrentPage(){var a=document.querySelector('.page.active');if(!a
 // ── BOOT & LOGIN ──
 function setLoginCredentials(){
   var u=document.getElementById('li-user');var p=document.getElementById('li-pass');
-  if(u)u.value='admin';if(p)p.value='admin123';
+  if(u)u.value='admin';if(p)p.value='1221';
 }
 function showLoginScreen(){
   document.getElementById('loadOverlay').style.display='none';
@@ -1001,7 +1001,7 @@ function showLoginScreen(){
 }
 function fillAdminCreds(){
   document.getElementById('li-user').value='admin';
-  document.getElementById('li-pass').value='admin123';
+  document.getElementById('li-pass').value='1221';
   document.getElementById('li-pass').type='text';
   var pt=document.getElementById('passToggle');if(pt)pt.textContent='🙈';
 }
